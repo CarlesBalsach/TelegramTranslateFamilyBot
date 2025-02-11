@@ -22,7 +22,7 @@ nest_asyncio.apply()  # Apply nest_asyncio to fix "event loop already running" i
 load_dotenv(dotenv_path=".env")
 BOT_TOKEN = os.getenv("TELEGRAM_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-ALLOWED_CHAT_ID = -4623127586
+ALLOWED_CHAT_ID = -4794199860
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 
@@ -72,6 +72,7 @@ def translate_text(text: str) -> str:
 
 
 async def translate_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
     if update.effective_chat.id != ALLOWED_CHAT_ID:
         return
     text = update.message.text
