@@ -22,12 +22,14 @@ nest_asyncio.apply()  # Apply nest_asyncio to fix "event loop already running" i
 load_dotenv(dotenv_path=".env")
 BOT_TOKEN = os.getenv("TELEGRAM_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-ALLOWED_CHAT_ID = -4794199860
+ALLOWED_CHAT_ID = -1003537681211
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Only respond if it's the allowed group
+    """
+    Handles the /start command. Only responds if the message is from the allowed chat.
+    """
     if update.effective_chat.id != ALLOWED_CHAT_ID:
         return
     await update.message.reply_text(
@@ -36,21 +38,40 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Echo handler (currently not used, but kept for debugging purposes).
+    """
     chat_id = update.effective_chat.id
-    print("Received message from chat:", chat_id)
     if chat_id != ALLOWED_CHAT_ID:
         return
     await update.message.reply_text(update.message.text)
 
 
 def is_only_emojis(text: str) -> bool:
-    # Remove all emoji characters; if nothing remains, then it was only emojis.
+    """
+    Checks if the text contains only emojis (no other characters).
+    
+    Args:
+        text: The text to check
+        
+    Returns:
+        True if the text contains only emojis, False otherwise
+    """
     no_emoji = emoji.replace_emoji(text, "")
     return no_emoji.strip() == ""
 
 
 def translate_text(text: str) -> str:
-    # System prompt instructs ChatGPT to detect input language and translate accordingly.
+    """
+    Translates text using OpenAI GPT-3.5-turbo. Auto-detects language and translates
+    Russian to English or any other language to Russian.
+    
+    Args:
+        text: The text to translate
+        
+    Returns:
+        The translated text
+    """
     completion = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
@@ -67,24 +88,28 @@ def translate_text(text: str) -> str:
         ],
     )
     translation = completion.choices[0].message.content
-    print(translation)
     return translation
 
 
 async def translate_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
+    """
+    Handles text messages and translates them. Only processes messages from the allowed chat.
+    Skips emoji-only messages.
+    """
     if update.effective_chat.id != ALLOWED_CHAT_ID:
         return
     text = update.message.text
-    # Ignore if the message is just emojis
     if is_only_emojis(text):
         return
-    # Run the blocking OpenAI call in a separate thread
     translation = await asyncio.to_thread(translate_text, text)
     await update.message.reply_text(translation)
 
 
 async def main():
+    """
+    Main function that initializes and starts the Telegram bot.
+    Sets up command and message handlers, then starts polling for updates.
+    """
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, translate_message))
