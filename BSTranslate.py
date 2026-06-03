@@ -22,15 +22,15 @@ nest_asyncio.apply()  # Apply nest_asyncio to fix "event loop already running" i
 load_dotenv(dotenv_path=".env")
 BOT_TOKEN = os.getenv("TELEGRAM_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-ALLOWED_CHAT_ID = -1003537681211
+ALLOWED_CHAT_IDS = {-1003537681211, -5063070227}
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
-    Handles the /start command. Only responds if the message is from the allowed chat.
+    Handles the /start command. Only responds if the message is from an allowed chat.
     """
-    if update.effective_chat.id != ALLOWED_CHAT_ID:
+    if update.effective_chat.id not in ALLOWED_CHAT_IDS:
         return
     await update.message.reply_text(
         "Hi there! Send me a message and I'll translate from English/Russian.\n\nПривет, там! Отправьте мне сообщение, и я переведу с английского/русского"
@@ -42,7 +42,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     Echo handler (currently not used, but kept for debugging purposes).
     """
     chat_id = update.effective_chat.id
-    if chat_id != ALLOWED_CHAT_ID:
+    if chat_id not in ALLOWED_CHAT_IDS:
         return
     await update.message.reply_text(update.message.text)
 
@@ -93,10 +93,10 @@ def translate_text(text: str) -> str:
 
 async def translate_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
-    Handles text messages and translates them. Only processes messages from the allowed chat.
+    Handles text messages and translates them. Only processes messages from allowed chats.
     Skips emoji-only messages.
     """
-    if update.effective_chat.id != ALLOWED_CHAT_ID:
+    if update.effective_chat.id not in ALLOWED_CHAT_IDS:
         return
     text = update.message.text
     if is_only_emojis(text):
